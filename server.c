@@ -20,7 +20,7 @@ ClientInfo clients[MAX_CLIENTS];
 int num_clients = 0;
 HANDLE mutex;
 
-// Colori ANSI per i messaggi dei client
+// Colori per i messaggi dei client
 const char* colors[MAX_CLIENTS] = {
         "\x1b[31m", // Rosso
         "\x1b[32m", // Verde
@@ -44,30 +44,30 @@ int main() {
     struct sockaddr_in server_addr, client_addr;
     int addr_size = sizeof(struct sockaddr_in);
 
-    // Inizializza la libreria Winsock
+    //inizializza la libreria Winsock
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
         printf("Inizializzazione Winsock fallita. Codice errore: %d\n", WSAGetLastError());
         return 1;
     }
 
-    // Crea il socket del server
+    //crea il socket del server
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
         printf("Creazione socket fallita. Codice errore: %d\n", WSAGetLastError());
         return 1;
     }
 
-    // Inizializza la struttura dell'indirizzo del server
+    //inizializza la struttura dell'indirizzo del server
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-    // Associa il socket all'indirizzo e alla porta specificati
+    //associa il socket all'indirizzo e alla porta specificati
     if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
         printf("Associazione fallita. Codice errore: %d\n", WSAGetLastError());
         return 1;
     }
 
-    // Mette il server in ascolto di connessioni
+    //mette il server in ascolto di connessioni
     if (listen(server_socket, 10) == SOCKET_ERROR) {
         printf("In attesa di connessioni fallita. Codice errore: %d\n", WSAGetLastError());
         return 1;
@@ -75,48 +75,48 @@ int main() {
 
     printf("Server in ascolto sulla porta %d...\n", PORT);
 
-    // Crea il mutex
+    //crea il mutex
     mutex = CreateMutex(NULL, FALSE, NULL);
     if (mutex == NULL) {
         printf("Creazione mutex fallita. Codice errore: %d\n", GetLastError());
         return 1;
     }
 
-    // Crea un thread per gestire l'input dell'admin
+    //crea un thread per gestire l'input dell'admin
     _beginthread(handleAdminInput, 0, NULL);
 
-    // Accetta connessioni dai client
+    //accetta connessioni dai client
     while (1) {
-        // Accetta la connessione da un client
+        //accetta la connessione da un client
         if ((client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &addr_size)) == INVALID_SOCKET) {
             printf("Accettazione connessione fallita. Codice errore: %d\n", WSAGetLastError());
             return 1;
         }
 
-        // Blocca l'accesso ai dati condivisi
+        //blocca l'accesso ai dati condivisi
         WaitForSingleObject(mutex, INFINITE);
 
         clients[num_clients].socket = client_socket;
         clients[num_clients].address = client_addr;
 
-        // Invia un messaggio di benvenuto al client appena connesso
+        //invia un messaggio di benvenuto al client appena connesso
         char welcome_message[] = "Benvenuto! Inserisci il tuo username:\n";
         send(client_socket, welcome_message, strlen(welcome_message), 0);
 
-        // Sblocca l'accesso ai dati condivisi
+        //sblocca l'accesso ai dati condivisi
         ReleaseMutex(mutex);
 
-        // Crea un thread per gestire il client
+        // crea un thread per gestire il client
         _beginthread(handleClient, 0, (void*)&clients[num_clients]);
 
         num_clients++;
     }
 
-    // Chiudi il socket del server
+    //chiudi il socket del server
     closesocket(server_socket);
     WSACleanup();
 
-    // Chiudi il mutex
+    //chiudi il mutex
     CloseHandle(mutex);
 
     return 0;
@@ -132,7 +132,7 @@ void handleClient(void* client_info_ptr) {
     if (bytes_received > 0) {
         client_info->username[bytes_received] = '\0';
 
-        // Ottieni l'indirizzo IP del client
+        //ottieni l'indirizzo IP del client
         char* client_ip = inet_ntoa(client_info->address.sin_addr);
 
         // Ottieni l'ora e la data correnti
@@ -141,10 +141,10 @@ void handleClient(void* client_info_ptr) {
         char time_str[100];
         strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
 
-        // Stampa le informazioni del client
+        // stampa le informazioni del client
         printf("Client connesso: %s (IP: %s) alle %s\n", client_info->username, client_ip, time_str);
 
-        // Notifica a tutti i client che un nuovo client si e' connesso
+        // notifica a tutti i client che un nuovo client si e' connesso
         snprintf(message, sizeof(message), "\x1b[93m%s si e' connesso\x1b[0m\n", client_info->username);
         broadcastMessage(message, INVALID_SOCKET);
     } else {
@@ -152,17 +152,17 @@ void handleClient(void* client_info_ptr) {
         return;
     }
 
-    // Ricevi messaggi dal client
+    //ricevi messaggi dal client
     while (1) {
         memset(buffer, 0, sizeof(buffer));
         bytes_received = recv(client_info->socket, buffer, sizeof(buffer), 0);
         if (bytes_received > 0) {
             buffer[bytes_received] = '\0';
 
-            // Prepara il messaggio da inviare agli altri client
+            // prepara il messaggio da inviare agli altri client
             snprintf(message, sizeof(message), "%s%s: %s\x1b[0m", colors[client_info - clients], client_info->username, buffer);
 
-            // Invia il messaggio a tutti gli altri client
+            // invia il messaggio a tutti gli altri client
             broadcastMessage(message, client_info->socket);
         } else if (bytes_received == 0) {
             printf("Client disconnesso: %s\n", client_info->username);
@@ -173,14 +173,14 @@ void handleClient(void* client_info_ptr) {
         }
     }
 
-    // Chiudi il socket del client
+    //chiudi il socket del client
     closesocket(client_info->socket);
 
-    // Notifica a tutti i client che un client si e' disconnesso
+    // notifica a tutti i client che un client si e' disconnesso
     snprintf(message, sizeof(message), "\x1b[93m%s si e' disconnesso\x1b[0m\n", client_info->username);
     broadcastMessage(message, INVALID_SOCKET);
 
-    // Rimuovi il client dalla lista dei client
+    // rimuovi il client dalla lista dei client
     WaitForSingleObject(mutex, INFINITE);
     for (int i = 0; i < num_clients; i++) {
         if (clients[i].socket == client_info->socket) {
@@ -203,10 +203,10 @@ void handleAdminInput(void* arg) {
         fgets(buffer, sizeof(buffer), stdin);
         buffer[strcspn(buffer, "\n")] = '\0'; // Rimuovi il carattere di nuova riga
 
-        // Prepara il messaggio da inviare ai client
+        // prepara il messaggio da inviare ai client
         snprintf(message, sizeof(message), "\x1b[95madmin: %s\x1b[0m", buffer);
 
-        // Invia il messaggio a tutti i client
+        //invia il messaggio a tutti i client
         broadcastMessage(message, INVALID_SOCKET);
     }
 }
