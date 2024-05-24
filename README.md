@@ -26,10 +26,6 @@ If you wish to contribute to this project, follow these steps:
 4. Push the branch (`git push origin feature/add-feature`)
 5. Open a Pull Request
 
-## Author 😎​
-
-Omega403
-
 ## License 🧾
 
 This project is distributed under the MIT License. See the `LICENSE` file for more information.
