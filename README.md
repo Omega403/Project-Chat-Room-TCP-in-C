@@ -5,7 +5,7 @@
 ## Project Description 🌐​
 
 Hi, this is a little project I did during the first semester of this year at university. I did it for practice and a bit for fun. The code still needs to be fixed and refined, as I haven't had much time due to studying and other things. 
-Anyway, about the project: The project is based on the use of sockets (one for the server and the various clients). The server can connect up to 10 clients (just create the "client_n .c" file [and updating the MakeC file]. 
+Anyway, about the project: The project is based on the use of sockets (one for the server and the various clients). The server can connect up to 10 clients (just create the "client_n .c" file [and updating the CMake file]. 
 You can see how it works in the video above
 
 ## How to Use 📍​
